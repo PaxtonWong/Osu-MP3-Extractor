@@ -14,6 +14,7 @@ class SearchObject:
         self.song_label = "{} {} - {}".format(row_tuple[0], row_tuple[1], row_tuple[2])
     
     def toggle_selected(self):
+        print("searchobject toggled")
         if self.selected == False:
             self.selected = True
             return
@@ -49,20 +50,22 @@ class SearchInstance:
         self.db_cur = db_cur
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.update_search_state(conn, db_cur, input_dir, output_dir)
+        #self.update_search_state(conn, db_cur, input_dir, output_dir)
 
     def get_search_results(self, search_term):
         #Search out of non-downloaded songs (not through database)
         #Returns REFERENCES to instances in self.search_objects[]. Used with GUI for display of filtered results.
-        search_regex = re.compile(".*{}.*".format(search_term))
-        search_result_list = []
-        for obj in self.search_objects:
-            song_str = obj.song_string()
-            if search_regex.match(song_str):
-                #Caution: search_result_list references objects directly. Not new objects 
-                search_result_list.append(SearchObject(obj.get_song_tuple()))
-        return search_result_list
-        
+##        search_regex = re.compile(".*{}.*".format(search_term))
+##        search_result_list = []
+##        for obj in self.search_objects:
+##            song_str = obj.song_string()
+##            if search_regex.match(song_str):
+##                search_result_list.append(SearchObject(obj.get_song_tuple()))
+##        return search_result_list
+        results = dq.get_search_results(self.conn, self.db_cur, self.input_dir, self.output_dir, search_term)
+        for result in results:
+            self.search_objects.append(SearchObject(result))
+            
     def extract_selected(self):
         remaining_search_objects = []
         for so in self.search_objects:
@@ -76,7 +79,7 @@ class SearchInstance:
                     print("SearchObject incorrectly initialized")
         #Make sure to commit as the _extract_song() function does not for performance's sake
         self.conn.commit()
-        self.update_search_state(self.conn, self.db_cur, self.input_dir, self.output_dir)
+        #self.update_search_state(self.conn, self.db_cur, self.input_dir, self.output_dir)
         self.search_objects = remaining_search_objects
 
     def update_search_state(self, conn, db_cur, input_dir, output_dir):

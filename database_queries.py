@@ -8,9 +8,17 @@ def get_not_downloaded(conn, db_cur, input_dir, output_dir):
     db_cur.execute('''SELECT * FROM songlist
                     LEFT JOIN downloaded ON songlist.id = downloaded.id
                     WHERE downloaded.id IS NULL;''')
-    
     return db_cur.fetchall()
 
+def get_search_results(conn, db_cur, input_dir, output_dir, query:str):
+    du.update_existing_song_list(conn, db_cur, input_dir)
+    du.clear_deleted_downloads(conn, db_cur, output_dir)
+    db_cur.execute("""SELECT * FROM songlist
+                    LEFT JOIN downloaded ON songlist.id = downloaded.id
+                    WHERE (downloaded.id IS NULL
+                    AND songlist.songname LIKE '%{}%');""".format(query))
+    return db_cur.fetchall()
+    
 def display_songlist(db_cur):
     #Debugging function
     db_cur.execute("SELECT * FROM songlist;")
