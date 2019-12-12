@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import search_functions
 import os
+from functools import partial
 mainfont = "Arial"
 class Window:
     
@@ -63,12 +64,25 @@ class Window:
         self._render_search_results()
         
     def _render_search_results(self):
+        #Reach into self.search_instance to toggle selected SearchObject instances.
+        self.result_list_buttons = []
         for i in range(len(self.search_instance.search_objects)):
-            res = tk.Button(self.window, text = self.search_instance.search_objects[i].song_string(),
-                            command = self.search_instance.search_objects[i].toggle_selected, font = (mainfont, 11))
-            self.result_bar.window_create("end", window = res)
+            self.result_list_buttons.append(tk.Button(self.window, text = self.search_instance.search_objects[i].song_string(),
+                            command = partial(self._toggle_search_result,i), font = (mainfont, 11), bg = "Gray"))
+            self.result_bar.window_create("end", window = self.result_list_buttons[i])
             self.result_bar.insert("end", '\n')
         self.result_bar.configure(state = "disabled")
+
+    def _toggle_search_result(self, index):
+        #Pass in the corresponding list index of the search result in self.search_instance.search_objects
+        #to toggle the search result and change the button color at once. Set button command to this function.
+        self.search_instance.search_objects[index].toggle_selected()
+        #Issue here with modifying button: Have to place res as class variable to access. Fix later.
+        if self.search_instance.search_objects[index].is_selected():
+            self.result_list_buttons[index].configure(bg="blue")
+        else:
+            self.result_list_buttons[index].configure(bg="Gray")
+         
         
     def _clear_screen(self):
         for widget in self.window.grid_slaves():
