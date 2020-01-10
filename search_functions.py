@@ -1,6 +1,5 @@
-import re
 import string
-import shutil
+import os
 import database_updater as du
 import database_queries as dq
 
@@ -53,9 +52,11 @@ class SearchInstance:
 
     def get_search_results(self, search_term):
         #Search out of non-downloaded songs (not through database)
+        self.search_objects = []
         results = dq.get_search_results(self.conn, self.db_cur, self.input_dir, self.output_dir, search_term)
         for result in results:
-            self.search_objects.append(SearchObject(result))
+            if os.path.isdir(os.path.join(self.input_dir,"{} {} - {}".format(result[0], result[1], result[2]))):
+                self.search_objects.append(SearchObject(result))
             
     def extract_selected(self):
         remaining_search_objects = []

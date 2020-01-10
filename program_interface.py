@@ -13,6 +13,7 @@ class Window:
         self.window = tk.Tk()
         self.window.geometry("400x300")
         self.window.title("Osu! MP3 Extractor: Enter Directory")
+        self.result_list_buttons = []
         self._start_screen()
         self.destroy_window_protocol()
     
@@ -32,7 +33,8 @@ class Window:
 
 
     def search_screen(self):
-        self._clear_screen()
+        self._clear_screen1()
+        self._clear_buttons()
         self.window.title("Osu! MP3 Extractor: Song Search")
         
         search_bar_label = tk.Label(self.window, font = (mainfont, 14), text = "Enter Search Term:")
@@ -49,45 +51,63 @@ class Window:
     def _results_screen(self):
         self.window.title("Osu! MP3 Extractor: Search Results")
         search_term = self.search_bar.get()
-        self._clear_screen()
+        self._clear_buttons()
+        self._clear_screen1()
         #retrieve search results into self.search_instance.search_objects
         self.search_instance.get_search_results(search_term)
         
-        num_results = len(self.search_instance.search_objects)
-        results_label = tk.Label(self.window, text = "{} Result(s):".format(num_results), font = (mainfont, 12))
-        results_label.pack(side = "left")
+        self.results_label = tk.Label(self.window, text = "{} Result(s):".format(len(self.search_instance.search_objects)), font = (mainfont, 12))
+        self.results_label.pack(side = "top")
+        extract_button = tk.Button(self.window, text = "Extract Selected", command = self.extract_button_command, font = (mainfont, 12))
+        extract_button.pack(side = "bottom")
+        back_button = tk.Button(self.window, text = "Back", command = self.search_screen, font = (mainfont, 12))
+        back_button.pack(side = "left")
         self.result_bar = tk.Text(self.window, wrap = "none")
         scroll_bar = tk.Scrollbar(orient = "vertical", command = self.result_bar.yview)
         self.result_bar.configure(yscrollcommand = scroll_bar.set)
         scroll_bar.pack(side = "right", fill = "y")
         self.result_bar.pack(fill = "both", expand = True)
         self._render_search_results()
+
         
     def _render_search_results(self):
         #Reach into self.search_instance to toggle selected SearchObject instances.
-        self.result_list_buttons = []
+        self.result_bar.configure(state = "normal")
         for i in range(len(self.search_instance.search_objects)):
             self.result_list_buttons.append(tk.Button(self.window, text = self.search_instance.search_objects[i].song_string(),
                             command = partial(self._toggle_search_result,i), font = (mainfont, 11), bg = "Gray"))
             self.result_bar.window_create("end", window = self.result_list_buttons[i])
             self.result_bar.insert("end", '\n')
         self.result_bar.configure(state = "disabled")
+        
+    def extract_button_command(self):
+        self.search_instance.extract_selected()
+        self._clear_buttons()
+        self.result_bar.configure(state = "normal")
+        self.result_bar.delete('1.0',tk.END)
+        self.results_label.configure(text = "{} Results(s)".format(len(self.search_instance.search_objects)))
+        self._render_search_results()
 
     def _toggle_search_result(self, index):
         #Pass in the corresponding list index of the search result in self.search_instance.search_objects
         #to toggle the search result and change the button color at once. Set button command to this function.
         self.search_instance.search_objects[index].toggle_selected()
-        #Issue here with modifying button: Have to place res as class variable to access. Fix later.
         if self.search_instance.search_objects[index].is_selected():
             self.result_list_buttons[index].configure(bg="blue")
         else:
             self.result_list_buttons[index].configure(bg="Gray")
          
         
-    def _clear_screen(self):
-        for widget in self.window.grid_slaves():
+    def _clear_screen1(self):
+        for widget in self.window.winfo_children():
             widget.destroy()
 
+    def _clear_buttons(self):
+        for button in self.result_list_buttons:
+            button.destroy()
+        self.result_list_buttons = []
+
+            
         
     def directory_check(self):
         input_dir = self.input_dir_bar.get()
