@@ -51,12 +51,15 @@ class Window:
 
         
     def _results_screen(self):
-        self.window.title("Osu! MP3 Extractor: Search Results")
         search_term = self.search_bar.get()
+        if search_term == "":
+            return
+        self.window.title("Osu! MP3 Extractor: Search Results")
         self._clear_buttons()
         self._clear_screen1()
         #retrieve search results into self.search_instance.search_objects
         self.search_instance.get_search_results(search_term)
+        #print(len(self.search_instance.search_objects))
         self.results_label = tk.Label(self.window, text = "{} Result(s):".format(len(self.search_instance.search_objects)), font = (mainfont, 12))
         self.results_label.pack(side = "top")
         extract_button = tk.Button(self.window, text = "Extract Selected", command = self.extract_button_command, font = (mainfont, 12))
@@ -134,7 +137,7 @@ class Window:
             print("creating new profile")
             messagebox.showinfo("New Profile Detected","Please wait, Osu! MP3 Retriever is updating your song list.")
             du.update_existing_song_list(self.conn, self.db_cur, input_dir)
-            dq.display_songlist(self.db_cur)
+            #dq.display_songlist(self.db_cur)
         print("# of songs indexed: ",dq.get_songlist_count(self.db_cur))
         return True
         

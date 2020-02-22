@@ -33,14 +33,12 @@ def _insert_song_entry(conn, db_cur, folder_name, songs_dir):
     #Checks within the song folder for the mp3 file and stores directory location.
     file_name_checker = re.compile("[0-9]+ .+ - .+")
     if file_name_checker.match(folder_name):
-        _, author, song_name = _parse_name(folder_name)
+        set_id, author, song_name = _parse_name(folder_name)
         file_list = os.listdir(os.path.join(songs_dir, folder_name))    
         cur_mp3 = ""   
         
-        #Try statement in order to account for bad .osu file names
-
-        song_id = _get_unique_id(songs_dir, folder_name)
-        print(song_id)
+        #song_id = _get_unique_id(songs_dir, folder_name)
+        #print(song_id)
      
         for file_name in file_list:
             _, ext = os.path.splitext(file_name)
@@ -51,9 +49,9 @@ def _insert_song_entry(conn, db_cur, folder_name, songs_dir):
             #check to make sure that an mp3 actually exists
             try:
                 db_cur.execute('''INSERT INTO songlist(id, author, songname, filename) 
-                VALUES (?,?,?,?);''',(int(song_id), author, song_name, cur_mp3))
+                VALUES (?,?,?,?);''',(int(set_id),  author, song_name, cur_mp3))
             except:
-                print(folder_name)
+                #print(folder_name)
                 conn.rollback()
 
                     
@@ -66,14 +64,14 @@ def _extract_song(row, conn, db_cur, input_dir, output_dir):
         if not os.path.isfile(output_loc):
             shutil.copyfile(file_loc, output_loc)
             try:
-                db_cur.execute('''INSERT INTO downloaded(id) VALUES (?)''',(row[0],))
+                db_cur.execute('''INSERT INTO downloaded(author, songname) VALUES (?,?)''',(row[1],row[2]))
                 return 1
             except:
                 conn.rollback()
     else:
         #give user a message that original song folder was deleted
         try:
-            db_cur.execute('''DELETE FROM songlist WHERE songlist.id = ?''', row[0])
+            db_cur.execute('''DELETE FROM songlist WHERE (songlist.author = ? AND songlist.songname = ?)''', (row[1],row[2]))
         except:
             conn.rollback()
     return 0
@@ -116,13 +114,15 @@ def clear_deleted_downloads(conn, db_cur, downloaded_dir):
     dir_list = os.listdir(downloaded_dir)
     db_cur.execute('''SELECT songlist.id, songlist.author, songlist.songname
                     FROM songlist
-                    INNER JOIN downloaded ON songlist.id = downloaded.id;''')
+                    INNER JOIN downloaded ON (songlist.author = downloaded.author
+                    AND songlist.songname = downloaded.songname);''')
     rows = db_cur.fetchall()
     delete_list = []
     for row in rows:
         if not os.path.isfile(os.path.join(downloaded_dir,"{} {} - {}.mp3".format(row[0], row[1], row[2]))):
-            delete_list.append((row[0],))
-    db_cur.executemany('''DELETE FROM downloaded WHERE downloaded.id = ?''', delete_list)
+            delete_list.append((row[1],row[2]))
+    db_cur.executemany('''DELETE FROM downloaded WHERE 
+                                            (downloaded.author = ? AND downloaded.songname = ?);''', delete_list)
     conn.commit()
         
 def extract_all_songs(conn, db_cur, input_dir, output_dir):
@@ -142,7 +142,7 @@ def extract_all_songs(conn, db_cur, input_dir, output_dir):
     conn.commit()
     print("Songs extracted: {}\n".format(extracted))
 
-def _get_unique_id(input_dir, current_folder_name):
+def _get_beatmap_id(input_dir, current_folder_name):
     #Get the beatmap id from the .OSU file to acquire primary key
     full_path = os.path.join(input_dir, current_folder_name)
     file_list = os.listdir(full_path)
@@ -177,14 +177,16 @@ def connect_db(db_name):
         db_cur.execute('''CREATE TABLE IF NOT EXISTS
                    songlist(
                    id INTEGER NOT NULL,
-                   author TEXT,
-                   songname TEXT,
-                   filename TEXT,
-                   PRIMARY KEY (id));''')
+                   author TEXT UNIQUE,
+                   songname TEXT UNIQUE,
+                   filename TEXT
+                   );''')
         db_cur.execute('''CREATE TABLE IF NOT EXISTS
                     downloaded(
-                    id INTEGER PRIMARY KEY NOT NULL,
-                    FOREIGN KEY (id) REFERENCES songlist (id)
+                    author TEXT,
+                    songname TEXT,
+                    FOREIGN KEY (author) REFERENCES songlist (author),
+                    FOREIGN KEY (songname) REFERENCES songlist(songname)
                     );''')
         db_cur.execute('''CREATE TABLE IF NOT EXISTS
                     timestamps(

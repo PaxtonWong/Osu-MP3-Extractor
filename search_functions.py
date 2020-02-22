@@ -53,16 +53,17 @@ class SearchInstance:
         #Search out of non-downloaded songs (not through database)
         self.search_objects = []
         results = dq.get_search_results(self.conn, self.db_cur, self.input_dir, self.output_dir, search_term)
-        print(len(results))
+        #print(len(results))
         for result in results:
             if os.path.isdir(os.path.join(self.input_dir,"{} {} - {}".format(result[0], result[1], result[2]))):
                 self.search_objects.append(SearchObject(result))
             
     def extract_selected(self):
         remaining_search_objects = []
+        print(self.output_dir)
         for so in self.search_objects:
             if so.is_selected():
-                du._extract_song(so.get_song_tuple(), self.db_cur, self.input_dir, self.output_dir)
+                du._extract_song(so.get_song_tuple(), self.conn, self.db_cur, self.input_dir, self.output_dir)
             else:
                 try:
                     #Re-initialize a new SearchObject to prevent referencing issues
@@ -83,7 +84,8 @@ class SearchInstance:
         except:
             raise Exception("Data Retrieval Issue")
         
-        
+    def view_search_results(self):
+        return self.search_objects
         
         
                 
