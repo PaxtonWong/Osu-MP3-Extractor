@@ -1,9 +1,7 @@
 import database_updater as du
-import database_queries as dq
 import search_functions as sf
 import program_interface as pi
-import sqlite3
-import string
+
 def do_search(song_base, db_cur, songs_dir, output_dir):
     instance = sf.SearchInstance(song_base, db_cur, songs_dir, output_dir)
     search_for = input()
@@ -12,7 +10,8 @@ def do_search(song_base, db_cur, songs_dir, output_dir):
         print(result.song_string())
 
 if __name__ == '__main__':
-    song_base, db_cur = du.connect_db("song_extract.db")
+    db_name = "song_extract.db"
+    song_base, db_cur = du.connect_db(db_name)
     if song_base:
         app_window = pi.Window(song_base, db_cur)
         

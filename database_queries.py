@@ -1,6 +1,5 @@
 import database_updater as du
-import search_functions as sf
-import sqlite3
+
 
 def get_not_downloaded(conn, db_cur, input_dir, output_dir):
     du.update_existing_song_list(conn, db_cur, input_dir)
@@ -32,4 +31,13 @@ def display_downloaded(db_cur):
     downloaded = db_cur.fetchall()
     for download in downloaded:
         print(download)
+        
+def is_new_profile(db_cur):
+    db_cur.execute("SELECT COUNT(id) FROM songlist")
+    if db_cur.fetchone()[0] == 0:
+        return True
+    return False
 
+def get_songlist_count(db_cur):
+    db_cur.execute("SELECT COUNT(id) FROM songlist")
+    return db_cur.fetchone()[0]

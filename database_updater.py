@@ -1,7 +1,6 @@
 import os
 import sqlite3
 import re
-import string
 import shutil
 
 def _parse_name(folder_name):
@@ -34,11 +33,17 @@ def _insert_song_entry(conn, db_cur, folder_name, songs_dir):
     #Checks within the song folder for the mp3 file and stores directory location.
     file_name_checker = re.compile("[0-9]+ .+ - .+")
     if file_name_checker.match(folder_name):
-        song_id, author, song_name = _parse_name(folder_name)
+        _, author, song_name = _parse_name(folder_name)
         file_list = os.listdir(os.path.join(songs_dir, folder_name))    
         cur_mp3 = ""   
+        
+        #Try statement in order to account for bad .osu file names
+
+        song_id = _get_unique_id(songs_dir, folder_name)
+        print(song_id)
+     
         for file_name in file_list:
-            n, ext = os.path.splitext(file_name)
+            _, ext = os.path.splitext(file_name)
             if ext == ".mp3":
                 cur_mp3 = file_name
                 break
@@ -48,10 +53,11 @@ def _insert_song_entry(conn, db_cur, folder_name, songs_dir):
                 db_cur.execute('''INSERT INTO songlist(id, author, songname, filename) 
                 VALUES (?,?,?,?);''',(int(song_id), author, song_name, cur_mp3))
             except:
-                print(song_id)
+                print(folder_name)
                 conn.rollback()
+
                     
-def _extract_song(row, db_cur, input_dir, output_dir):
+def _extract_song(row, conn, db_cur, input_dir, output_dir):
     file_loc = os.path.join("{} {} - {}".format(row[0],row[1],row[2]),row[3])
     file_loc = os.path.join(input_dir, file_loc)
     output_loc = os.path.join(output_dir, "{} {} - {}.mp3".format(row[0],row[1],row[2]))
@@ -131,13 +137,36 @@ def extract_all_songs(conn, db_cur, input_dir, output_dir):
         return
     extracted = 0
     for row in rows:
-        extracted += _extract_song(row, db_cur, input_dir, output_dir)
+        extracted += _extract_song(row, conn, db_cur, input_dir, output_dir)
                 
     conn.commit()
     print("Songs extracted: {}\n".format(extracted))
 
-     
+def _get_unique_id(input_dir, current_folder_name):
+    #Get the beatmap id from the .OSU file to acquire primary key
+    full_path = os.path.join(input_dir, current_folder_name)
+    file_list = os.listdir(full_path)
+    osu_file = ""
+    beatmap_id = 0
+    
+    for file_name in file_list:
+        _, ext = os.path.splitext(file_name)
+        if ext == ".osu":
+            osu_file = file_name   
+            break   
+    osu_file = os.path.join(full_path,osu_file)
+    if not os.path.isfile(osu_file):
+        print(osu_file)
         
+    with open(osu_file, encoding = "UTF-8") as osf:
+        buffer = osf.read(1600)
+        split_text = re.split("\n|:",buffer)
+        
+        for ind in range(len(split_text)):
+            if split_text[ind] == "BeatmapID":
+                return int(split_text[ind+1])
+            
+    return beatmap_id
     
 
 def connect_db(db_name):

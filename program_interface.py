@@ -3,6 +3,8 @@ from tkinter import messagebox
 import search_functions
 import os
 from functools import partial
+import database_queries as dq
+import database_updater as du
 mainfont = "Arial"
 class Window:
     
@@ -45,7 +47,7 @@ class Window:
         
         search_button = tk.Button(self.window, text = "Search", command = self._results_screen)
         search_button.grid(row = 1, column = 1)
-
+        
 
         
     def _results_screen(self):
@@ -55,7 +57,6 @@ class Window:
         self._clear_screen1()
         #retrieve search results into self.search_instance.search_objects
         self.search_instance.get_search_results(search_term)
-        
         self.results_label = tk.Label(self.window, text = "{} Result(s):".format(len(self.search_instance.search_objects)), font = (mainfont, 12))
         self.results_label.pack(side = "top")
         extract_button = tk.Button(self.window, text = "Extract Selected", command = self.extract_button_command, font = (mainfont, 12))
@@ -107,8 +108,6 @@ class Window:
             button.destroy()
         self.result_list_buttons = []
 
-            
-        
     def directory_check(self):
         input_dir = self.input_dir_bar.get()
         output_dir = self.output_dir_bar.get()
@@ -116,10 +115,11 @@ class Window:
             messagebox.showinfo("Error","Please enter in your full Osu! beatmap directory path - ie. ...\osu!\Songs")
             return   
         self.search_instance = search_functions.SearchInstance(self.conn, self.db_cur, input_dir, output_dir)
-        self.search_screen()
+        if self._new_profile_check(input_dir, output_dir):
+            self.search_screen()
 
     def _quit_message(self):
-        if messagebox.askokcancel("Quit", "Close Osu! MP3 Extractor application?"):
+        if messagebox.askokcancel("Quit", "Close Osu! MP3  application?"):
             self.window.destroy()
             if self.conn:
                 print("database closed")
@@ -129,6 +129,20 @@ class Window:
         self.window.protocol("WM_DELETE_WINDOW", self._quit_message)
         self.window.mainloop()
         
+    def _new_profile_check(self, input_dir, output_dir):
+        if dq.is_new_profile(self.db_cur):
+            print("creating new profile")
+            messagebox.showinfo("New Profile Detected","Please wait, Osu! MP3 Retriever is updating your song list.")
+            du.update_existing_song_list(self.conn, self.db_cur, input_dir)
+            dq.display_songlist(self.db_cur)
+        print("# of songs indexed: ",dq.get_songlist_count(self.db_cur))
+        return True
+        
+    
+        
+        
         
 
+
+    
 
