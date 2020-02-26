@@ -177,9 +177,10 @@ def connect_db(db_name):
         db_cur.execute('''CREATE TABLE IF NOT EXISTS
                    songlist(
                    id INTEGER NOT NULL,
-                   author TEXT UNIQUE,
-                   songname TEXT UNIQUE,
-                   filename TEXT
+                   author TEXT,
+                   songname TEXT,
+                   filename TEXT,
+                   UNIQUE(id, author, songname)
                    );''')
         db_cur.execute('''CREATE TABLE IF NOT EXISTS
                     downloaded(
@@ -196,9 +197,8 @@ def connect_db(db_name):
         print("Couldn't Connect to Database. Closing...\n")
         song_base.rollback()
         return None
-    else:
-        song_base.commit()
-        return song_base, db_cur
+    song_base.commit()
+    return song_base, db_cur
 
 
 
