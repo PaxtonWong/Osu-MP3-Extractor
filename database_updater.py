@@ -64,7 +64,7 @@ def _extract_song(row, conn, db_cur, input_dir, output_dir):
         if not os.path.isfile(output_loc):
             shutil.copyfile(file_loc, output_loc)
             try:
-                db_cur.execute('''INSERT INTO downloaded(author, songname) VALUES (?,?)''',(row[1],row[2]))
+                db_cur.execute('''INSERT INTO downloaded(id, author, songname) VALUES (?,?,?)''',(row[0], row[1],row[2]))
                 return 1
             except:
                 conn.rollback()
@@ -115,14 +115,14 @@ def clear_deleted_downloads(conn, db_cur, downloaded_dir):
     db_cur.execute('''SELECT songlist.id, songlist.author, songlist.songname
                     FROM songlist
                     INNER JOIN downloaded ON (songlist.author = downloaded.author
-                    AND songlist.songname = downloaded.songname);''')
+                    AND songlist.songname = downloaded.songname AND songlist.id = downloaded.id);''')
     rows = db_cur.fetchall()
     delete_list = []
     for row in rows:
         if not os.path.isfile(os.path.join(downloaded_dir,"{} {} - {}.mp3".format(row[0], row[1], row[2]))):
-            delete_list.append((row[1],row[2]))
+            delete_list.append((row[0],row[1],row[2]))
     db_cur.executemany('''DELETE FROM downloaded WHERE 
-                                            (downloaded.author = ? AND downloaded.songname = ?);''', delete_list)
+                                            (downloaded.id = ? AND downloaded.author = ? AND downloaded.songname = ?);''', delete_list)
     conn.commit()
         
 def extract_all_songs(conn, db_cur, input_dir, output_dir):
@@ -184,10 +184,12 @@ def connect_db(db_name):
                    );''')
         db_cur.execute('''CREATE TABLE IF NOT EXISTS
                     downloaded(
+                    id INTEGER NOT NULL,
                     author TEXT,
                     songname TEXT,
                     FOREIGN KEY (author) REFERENCES songlist (author),
-                    FOREIGN KEY (songname) REFERENCES songlist(songname)
+                    FOREIGN KEY (songname) REFERENCES songlist(songname),
+                    FOREIGN KEY (id) REFERENCES songlist(id)
                     );''')
         db_cur.execute('''CREATE TABLE IF NOT EXISTS
                     timestamps(

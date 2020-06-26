@@ -49,10 +49,10 @@ class SearchInstance:
         self.output_dir = output_dir
         #self.update_search_state(conn, db_cur, input_dir, output_dir)
     
-    def get_search_results(self, search_term):
+    def get_search_results(self, songname, author):
         #Search out of non-downloaded songs (not through database)
         self.search_objects = []
-        results = dq.get_search_results(self.conn, self.db_cur, self.input_dir, self.output_dir, search_term)
+        results = dq.get_search_results(self.conn, self.db_cur, self.input_dir, self.output_dir, songname, author)
         #print(len(results))
         for result in results:
             if os.path.isdir(os.path.join(self.input_dir,"{} {} - {}".format(result[0], result[1], result[2]))):

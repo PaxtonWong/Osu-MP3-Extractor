@@ -39,26 +39,36 @@ class Window:
         self._clear_buttons()
         self.window.title("Osu! MP3 Extractor: Song Search")
         
-        search_bar_label = tk.Label(self.window, font = (mainfont, 14), text = "Enter Search Term:")
+        search_bar_label = tk.Label(self.window, font = (mainfont, 14), text = "Enter Search Terms:")
         search_bar_label.grid(row = 0, column = 0)
         
+        songname_label = tk.Label(self.window, font = (mainfont, 12), text = "Song Name:")
+        songname_label.grid(row = 1, column = 0)
+        
+        author_label = tk.Label(self.window, font = (mainfont, 12), text = "Author:")
+        author_label.grid(row = 2, column = 0)
+        
         self.search_bar = tk.Entry(self.window, bd = 5)
-        self.search_bar.grid(row = 0, column = 1)
+        self.search_bar.grid(row = 1, column = 1)
+        
+        self.author_bar = tk.Entry(self.window, bd = 5)
+        self.author_bar.grid(row = 2, column = 1)
         
         search_button = tk.Button(self.window, text = "Search", command = self._results_screen)
-        search_button.grid(row = 1, column = 1)
+        search_button.grid(row = 3, column = 1)
         
 
         
     def _results_screen(self):
         search_term = self.search_bar.get()
-        if search_term == "":
+        search_author = self.author_bar.get()
+        if search_term == "" and search_author == "":
             return
         self.window.title("Osu! MP3 Extractor: Search Results")
         self._clear_buttons()
         self._clear_screen1()
         #retrieve search results into self.search_instance.search_objects
-        self.search_instance.get_search_results(search_term)
+        self.search_instance.get_search_results(search_term, search_author)
         #print(len(self.search_instance.search_objects))
         self.results_label = tk.Label(self.window, text = "{} Result(s):".format(len(self.search_instance.search_objects)), font = (mainfont, 12))
         self.results_label.pack(side = "top")
